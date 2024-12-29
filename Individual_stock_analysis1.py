@@ -57,6 +57,8 @@ stocks_yearly['code']=stocks.values()
 stocks_yearly['return_yearly']=return_yearly
 stocks_yearly.sort_values('return_yearly',inplace=True)
 #按照不同公司代码，绘制平均年收益条形图,barplot
+# 调整x轴标签显示方式,之前格式化为了年份，需要调整成ts_code
+axes2.set_xticklabels(stocks_yearly['ts_code'], rotation=45, ha="right")
 axes2.set_title('选定股票平均年化收益率图')
 sns.barplot(data=stocks_yearly,x='code',y='return_yearly',ax=axes2)
 plt.show()
