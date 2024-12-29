@@ -20,7 +20,7 @@ tushare能够为用户方便快捷的获取大量可以用于金融分析的数�
 seaborn库是基于matplotlib库开发的高级数据可视化库，可以直接读取pandas数据框（DataFrame）,避免了matplotlib需要进行解包数据列等复杂操作，因此可以快速便捷的生成美观的统计图表，容易上手
 ### （5）matplotlib库
 ## 2.项目内容
-### （1）读取通过tushare库获取的股票数据，以及数据的基础信息，如占用内存和数据类型
+### （1）读取通过tushare库获取的股票数据，以及数据的基础信息，如占用内存和数据类型,并保存到csv文件中
   本部分以文件stock_analysis.py为例，进行分析解释
   
   首先导入相关的模块，用于抓取数据，进行数据分析以及可视化
@@ -39,4 +39,14 @@ pro=ts.pro_api()
 df_sz = pro.daily(ts_code='000001.SZ', start_date='19901220', end_date='20211231')
 print(df_sz)
 df_sz.to_csv("SH_SZ.csv",index=False,float_format='%.2f')
+```
+### (2)提前进行绘图基础配置
+  以下代码块主要实现了绘制图表的字体设置（'font.sans-serif'），正确显示负号('axes.unicode_minus'),以及规定了绘制图像包括一张12*5的画布，画布中包括两张子图，子图将画布分为一行两列，分别编号为1，2
+```python
+#'SimHei'表示字体为黑体
+plt.rcParams['font.sans-serif']='SimHei'
+plt.rcParams['axes.unicode_minus']=False
+fig=plt.figure(figsize=(12,5))
+axes1=fig.add_subplot(1,2,1)
+axes2=fig.add_subplot(1,2,2)
 ```
