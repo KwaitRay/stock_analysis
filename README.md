@@ -40,8 +40,8 @@ df_sz = pro.daily(ts_code='000001.SZ', start_date='19901220', end_date='20211231
 print(df_sz)
 df_sz.to_csv("SH_SZ.csv",index=False,float_format='%.2f')
 ```
-### (2)提前进行绘图基础配置
-  以下代码块主要实现了绘制图表的字体设置（'font.sans-serif'），正确显示负号('axes.unicode_minus'),以及规定了绘制图像包括一张12*5的画布，画布中包括两张子图，子图将画布分为一行两列，分别编号为1，2
+### (2)提前进行绘图基础配置，避免显示问题
+  以下代码块主要实现了绘制图表的字体设置（'font.sans-serif'），正确显示负号('axes.unicode_minus'),以及规定了绘制图像包括一张12*5的画布，画布中包括两张子图，子图将画布分为一行两列，分别编号为1，2,进行坐标轴格式化以及设置标签
 ```python
 #'SimHei'表示字体为黑体
 plt.rcParams['font.sans-serif']='SimHei'
@@ -49,4 +49,30 @@ plt.rcParams['axes.unicode_minus']=False
 fig=plt.figure(figsize=(12,5))
 axes1=fig.add_subplot(1,2,1)
 axes2=fig.add_subplot(1,2,2)
+# 格式化x轴，只显示年份
+date_format = mdates.DateFormatter('%Y')
+axes1.xaxis.set_major_formatter(date_format)
+axes2.xaxis.set_major_formatter(date_format)
+# 自动调整x轴标签的显示
+fig.autofmt_xdate()
+```
+### (3)读取csv数据
+  利用pandas.read_csv()来读取csv数据到data中，并注意需要将data中交易时间对应的trade_date类型修改为datetime类型（使用xxx['column_name']=pd.to_datetime(xxx['column_name',format='%Y%m%d'])），避免之后进行时间处理类型错误，以及绘制图表时的坐标轴显示问题
+```python
+#读取通过tushare库获取的股票数据，以及数据的基础信息，如占用内存和数据类型
+data=pd.read_csv("SH_SZ.csv")
+data.info()
+#trade_date()列是object类型，因此需要转化为datetime类型,%Y%m%d表示对应的列中，时间是以yyyymmdd的格式出现的，注意Y（大写）
+data['trade_date']=pd.to_datetime(data['trade_date'],format="%Y%m%d")
+print("................")
+print(data['trade_date'].dtype)
+#展示数据的前五行
+data.head()
+```
+### (4)绘制图表
+```python
+axes1.set_title("1990-2021上证-深证指数每日收盘价走势图")
+sns.lineplot(x=data.trade_date,y=data.close,hue=data.ts_code,ax=axes1)
+axes2.set_title("1990-2021上证-深证指数每日成交量走势图")
+sns.lineplot(x=data.trade_date,y=data.vol,hue=data.ts_code,ax=axes2)
 ```
