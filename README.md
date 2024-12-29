@@ -70,7 +70,7 @@ print(data['trade_date'].dtype)
 #展示数据的前五行
 data.head()
 ```
-#### (4)绘制图表
+#### (4)绘制图表(包括每日收盘价走势图，每日成交量走势图以及2015年000001.SZ月交易量走势图和开盘价，收盘价，最高价，最低价走势图)
   直接利用set_title()设置图表标题，利用seaborn库的sns.lineplot(x=xxxx,y=xxxxx,hue=data.ts_code,ax=axes1)，分别设置x轴以及y轴对应的数据，hue=data.te_code表示按照ts_code分组，并且不同分组用不同颜色的线条绘制，绘制的图表是上述初始化图表中的axes1
 ```python
 axes1.set_title("1990-2021上证-深证指数每日收盘价走势图")
@@ -78,8 +78,29 @@ sns.lineplot(x=data.trade_date,y=data.close,hue=data.ts_code,ax=axes1)
 axes2.set_title("1990-2021上证-深证指数每日成交量走势图")
 sns.lineplot(x=data.trade_date,y=data.vol,hue=data.ts_code,ax=axes2)
 ```
-最终效果图如下所示
 ![close_vol_trend](close_vol_trend.png)
+
+  该部分利用datetime库选取了交易年份为2015（data.trade_date.dt.year==2015）以及交易代码为'000001.SZ'的股票交易信息进行进一步分析，并以交易日期作为索引，按照月尺度(ME)进行重采样，并利用聚合函数，分别对开盘价open，收盘价close取均值，日最高交易价取最大值，日最低交易价取最小值，并按月累计日交易量
+```python
+sh_2015=data[(data.trade_date.dt.year==2015)&(data.ts_code=='000001.SZ')]
+sh_2015.set_index(sh_2015.trade_date,inplace=True)
+sh_2015_M=sh_2015.resample('ME').agg({'open':lambda x:np.mean(x),
+                                      'close':lambda y:np.mean(y),
+                                      'high':lambda z:np.max(z),
+                                      'low':lambda m:np.min(m),
+                                      'vol':lambda n:np.sum(n)})
+#000001.SZ月交易量走势图绘制
+fig=plt.figure(figsize=(12,5))
+axes1=fig.add_subplot(1,2,1)
+axes2=fig.add_subplot(1,2,2)
+sns.lineplot(data=sh_2015_M['vol'],ax=axes1)
+axes1.set_title("2015年上证指数月交易量走势图")
+sns.lineplot(data=sh_2015_M[['open','close','high','low']],ax=axes2)
+axes2.set_title("2015年上证指数开盘价，收盘价，最高价，最低价走势图")
+plt.show()
+```
+
+![trend_2015_000001SZ](trend_2015_000001SZ.png)
 ### 项目二:000001.SZ(平安银行)等四只股票2021年收益率以及风险分析
 #### (1)读取对应股票数据
   这部分操作与上一个项目整体类似，但是利用了for循环来简化多只股票的读取,提前将需要读取的股票代码和名称存放在stocks字典中
@@ -134,7 +155,10 @@ data['simple_return_daily']=data.groupby('ts_code')['close'].transform(simple_re
 data['long_return_daily']=data.groupby('ts_code')['close'].transform(long_return_daily)
 ```
 #### (4)根据计算好的日收益率，进行累计日收益率以及年化收益率计算
-    初始化年收益率列表return_yearly=[],然后按照编号来分别计算各只股票的累计日收益率以及年化收益率
+    初始化年收益率列表return_yearly=[],然后按照编号(for stock_code in stocks.values())来分别计算各只股票的累计日收益率以及年化收益率
+    计算方式为:
+    累计日收益率=累乘（1+当天绝对日收益率）  ，注意要排除掉第一行的空值NAN
+    年化收益率=（1+对数日收益率的均值）**252-1
 ```python
 #初始化平均年化收益率数据
 return_yearly=[]
@@ -163,3 +187,43 @@ axes2.set_title('选定股票平均年化收益率图')
 sns.barplot(data=stocks_yearly,x='ts_code',y='return_yearly',ax=axes2)
 plt.show()
 ```
+![yearly_return_analysis](yearly_return_analysis.png)
+#### (5)风险分析
+  提前定义好风险分析的函数
+```python
+def MeanDevition(series):
+    #平均差计算
+    d = np.abs(series-series.mean()).mean()
+    return d
+def MaxMinDevition(series):
+    #极差计算
+    d = series.max()-series.min()
+    return d
+def QuantileDevition(series):
+    #四分位距计算
+    d = series.quantile(0.75)-series.quantile(0.25)
+    return d
+def VariationCoef(series):
+    #离散系数计算
+    d = series.std()/series.mean()
+    return d
+def Skewness(series):
+    #偏度计算
+    return series.skew()
+def Kurtosis(series):
+    #峰度计算
+    return series.kurt()
+
+risk_data=data.groupby('ts_code')['long_return_daily'].agg([np.mean,np.std,np.var,MeanDevition,MaxMinDevition,QuantileDevition,VariationCoef,Skewness,Kurtosis])
+print(risk_data)
+```
+分析结果如下所示
+
+# 风险分析结果
+
+| ts_code    | mean       | std       | var       | MeanDevition | MaxMinDevition | QuantileDevition | VariationCoef | Skewness  | Kurtosis  |
+|------------|------------|-----------|-----------|--------------|----------------|------------------|---------------|-----------|-----------|
+| 000001.SZ  | 0.000466   | 0.019401  | 0.000376  | 0.013619     | 0.193031       | 0.019458         | 41.604222     | -0.506142 | 3.634518  |
+| 000002.SZ  | 0.001356   | 0.024398  | 0.000595  | 0.017401     | 0.201282       | 0.024153         | 17.998878     | -0.658943 | 2.816861  |
+| 000004.SZ  | 0.000314   | 0.039341  | 0.001548  | 0.029332     | 0.201637       | 0.042405         | 125.156861    | -0.099256 | 0.841227  |
+| 000005.SZ  | 0.001452   | 0.023949  | 0.000574  | 0.017907     | 0.194847       | 0.025296         | 16.496471     | 0.080394  | 0.908681  |
