@@ -32,9 +32,11 @@ import numpy as np
 import seaborn as sns
 import datetime as dt
 ```
-  首先用户需要在tushare官网进行注册，并在首页-个人主页-接口token中复制对应的toekn,用于在以下代码中连接到tushare账号，用于抓取数据。以下代码包括设置token,连接api以及利用tushare提供的daily方法对特定ts_code(即股票编号)在选取时间范围内的日交易数据（daily）进行抓取，注意，可以访问tushare官网，官网还提供了大量不同数据产品以及月交易数据，季度交易数据等多种格式的数据，对于某些数据产品，会收取一定积分（tushare内部货币）
-```
+  首先用户需要在tushare官网进行注册，并在首页-个人主页-接口token中复制对应的toekn,用于在以下代码中连接到tushare账号，用于抓取数据。以下代码包括设置token,连接api以及利用tushare提供的daily方法对特定ts_code(即股票编号)在选取时间范围内的日交易数据（daily）进行抓取，注意，可以访问tushare官网，官网还提供了大量不同数据产品以及月交易数据，季度交易数据等多种格式的数据，对于某些数据产品，会收取一定积分（tushare内部货币）。然后将抓取的数据转化为便于pandas读取的csv文件格式，xxx.to_csv('name.csv',index=False,float_format='%.2f'),传入参数包括数据文件名（自定义），不传入行索引，以及保留两位小数
+```python
 ts.set_token("e3956f941d9ee613075ff03d85b50499687b6a646e7337e493dcf657")
 pro=ts.pro_api()
 df_sz = pro.daily(ts_code='000001.SZ', start_date='19901220', end_date='20211231')
 print(df_sz)
+df_sz.to_csv("SH_SZ.csv",index=False,float_format='%.2f')
+```
